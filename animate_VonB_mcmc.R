@@ -5,13 +5,16 @@ library(sm)
 A=10
 age=1:A
 
-#Create dummy params for each individ of fish age a
+#Known parameters of the von Bertalanffy growth model
+#Linf.mu*(1-exp(-k.mu(age-t0)))
+#Linf = asymptotic size
+#k = rate approaching Linf
+#t0 = theoretical time at age-0
 
-#Known parameters
 Linf.mu = 650
 k.mu = 0.25
 
-# collect some data (e.g. a sample of heights)
+# generate mean length at age
 lt<-Linf.mu*(1-exp(-k.mu*(age-0)))
 
 # log-likelihood function
@@ -40,7 +43,7 @@ geninits <- function(){
        k = runif(1,0,1))
 }
 
-jump <- function(lt, dist = .2){ # must be symmetric
+jump <- function(lt, dist = .2){
   lt + rnorm(1, 0, dist)
 }
 
@@ -56,16 +59,13 @@ for (c in 1:chains){
   theta.post[1, 1] <- inits$linf
   theta.post[2, 1] <- inits$k
   for (t in 2:iter){
-    # theta_star = proposed next values for parameters
+    
     theta_star <- c(jump(theta.post[1, t-1]), jump(theta.post[2, t-1]))
     pstar <- post(lt, age,linf=theta_star[1],k=theta_star[2])  
     pprev <- post(lt, age, linf=theta.post[1, t-1],k=theta.post[2,t-1])
     lr <- pstar - pprev
     r <- exp(lr)
     
-    # theta_star is accepted if posterior density is higher w/ theta_star
-    # if posterior density is not higher, it is accepted with probability r
-    # else theta does not change from time t-1 to t
     accept <- rbinom(1, 1, prob = min(r, 1))
     accepted[c, t - 1] <- accept
     if (accept == 1){
@@ -93,7 +93,7 @@ for (i in sequence){
         col="purple")
   lines(posterior[3, 1, 1:i], posterior[3, 2, 1:i],
         col="red")
-  #text(x=650, y=0.20, paste("Iteration ", i), cex=1.5)
+  
   sm.density(x=cbind(c(posterior[, 1, 1:i]), c(posterior[, 2, 1:i])),
              xlab="Length infinity", ylab="k",
              zlab="", 
@@ -105,7 +105,7 @@ for (i in sequence){
 
 oopts = ani.options(interval = 0.5)
 ani.replay()
-setwd("C:/Users/dstewart/Desktop")
+setwd("")
 
 saveGIF(ani.replay(), clean=TRUE,interval=0.07,ani.width=800,img.name = "MCMC_Linf_k_plot")
 
